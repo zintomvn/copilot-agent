@@ -439,129 +439,138 @@ Supervisor / Case Orchestrator
 
 ## 9. Agentic Workflow
 
-The workflow adapts the supplied few-shot architecture: one normalized query fans out into semantic, temporal/revision, keyword/metadata, and weighting paths; results are fused, reranked, validated, reviewed, and looped back when required evidence is incomplete.
+P0 is a bounded evidence-validation workflow, not answer-first RAG. It converts a typed defect case into source-specific search tasks, retrieves and ranks controlled evidence, applies deterministic gates, and either prepares a review package or stops safely. Search output is an assistive route to controlled evidence; it is never a maintenance instruction, operational decision, or release authorization.
+
+This design adopts two applicable findings from the research: retrieval benefits from complementary semantic and exact-match paths followed by reranking, and aviation retrieval must preserve a technician's access to the controlled procedure rather than replace it with generated procedural text. The MVP intentionally uses text indexes, a document registry, and a deterministic reference parser only. No knowledge graph is part of this workflow.
 
 ```mermaid
 flowchart LR
-    Q[Defect Case Input] --> PRE[Language Detection, Parsing,\nSchema Normalization]
-    PRE --> IV{Required Input Valid?}
-    IV -->|No| NC[NEEDS_CLARIFICATION]
-    IV -->|Yes| PLAN[Supervisor Creates Bounded Plan]
+    Q[Defect Case Input] --> PRE{Preflight:\nParse, Normalize, Validate Required Input}
+    PRE -->|Needs input| NC[NEEDS_CLARIFICATION]
+    NC -->|Corrected case supplied| PRE
 
     subgraph LOOP[Retrieval Strategy Loop]
-        PLAN --> DEC[Query Decomposition and Expansion Agent]
-        PLAN --> TEMP[Revision and Temporal Query Agent]
-        PLAN --> KEY[Keyword and Metadata Agent]
-        PLAN --> WEIGHT[Retrieval Weighting Agent]
+        PRE -->|Ready| PLAN[Supervisor Creates Bounded Plan]
+        PLAN --> DEC[Query Decomposition Agent]
+        DEC --> SEM[Semantic Search over Approved Task Metadata]
+        DEC --> LEX[BM25 and Exact Reference Search]
+        DEC --> REG[Document Registry and Revision Lookup]
 
-        DEC --> SEM[Semantic Vector Search]
-        TEMP --> REG[Revision Registry Search]
-        KEY --> LEX[BM25 and Exact Reference Search]
-        PLAN --> GRAPH[Cross-Reference Graph Search]
-        PLAN --> HIST[Historical Case Search P1]
-
-        SEM --> FUSE[Hybrid Fusion]
-        REG --> FUSE
-        LEX --> FUSE
-        GRAPH --> FUSE
-        HIST --> FUSE
-        WEIGHT --> FUSE
+        SEM --> ELIG[Eligibility Pre-filter:\nRegistry, Source, ACL, Approval,\nCurrent Revision, Applicability/Effectivity]
+        LEX --> ELIG
+        REG --> ELIG
+        ELIG --> FUSE[Versioned Reciprocal-Rank Fusion]
+        FUSE --> RR[Cross-Encoder Rerank]
     end
 
-    FUSE --> RR[LLM or Cross-Encoder Rerank]
-    RR --> RULE[Non-Overridable Rule Gates]
-
-    RULE --> APP[Applicability and Effectivity Check]
-    APP --> REV[Revision and Approval Check]
-    REV --> XREF[Mandatory Cross-Reference Resolver]
+    RR --> XREF[Parse and Resolve Mandatory References]
     XREF --> CON[Conflict and Consistency Check]
     CON --> CIT[Atomic Claim and Citation Check]
     CIT --> COMP[Completeness and Safety-Boundary Check]
 
-    XREF -->|Required reference missing and loop budget remains| DEC
-    CON -->|New targeted evidence required and loop budget remains| DEC
+    XREF -->|Required reference missing and loop budget remains| PLAN
+    XREF -->|Required reference missing; budget exhausted| ABS[ABSTAINED]
+    XREF -->|Unresolved material conflict; budget exhausted| ESC[ESCALATED]
+    CON -->|New targeted evidence required and loop budget remains| PLAN
 
     COMP -->|All gates pass| DRAFT[Review Package Draft]
     COMP -->|Critical input missing| NC
-    COMP -->|Material conflict| ESC[ESCALATED]
-    COMP -->|Evidence insufficient| ABS[ABSTAINED]
+    COMP -->|Material conflict| ESC
+    COMP -->|Evidence insufficient| ABS
     COMP -->|Tool or system failure| FAIL[FAILED]
 
     DRAFT --> CRIT[Independent Review Critic]
     CRIT -->|Missing check and budget remains| PLAN
+    CRIT -->|Missing mandatory evidence; budget exhausted| ABS
+    CRIT -->|Unresolved material conflict; budget exhausted| ESC
     CRIT -->|Valid| READY[REVIEW_READY]
 
-    READY --> HUMAN[Authorized Human Review]
+    READY --> HUMAN[Authorized Human Opens Controlled Source and Reviews]
     ESC --> HUMAN
-    HUMAN --> HR[HUMAN_REVIEWED or Returned for Correction]
-    HR --> SKILL[Controlled Feedback and Skill Update Queue]
-    SKILL -. administrator-approved version only .-> PLAN
+    HUMAN -->|Approved or resolution recorded| HR[HUMAN_REVIEWED]
+    HUMAN -->|Returned for correction| NC
+    HUMAN -. feedback event; no workflow transition .-> SKILL[Controlled Feedback and Skill Update Queue]
 ```
 
 ### 9.1 Retrieval strategy details
 
+#### Execution boundary
+
+- Every run is pinned to a `source_snapshot_id`, registry revision, retrieval configuration, prompt version, and loop budget.
+- The planner may create or refine source-specific search tasks, but cannot alter ACL, approval, effectivity, revision, or fusion configuration.
+- Semantic retrieval and reranking use stable task metadata such as document type, ATA path, task/reference number, title, and registered source location. After a candidate passes the eligibility pre-filter, the evidence viewer opens its exact controlled span. The model must not rewrite, paraphrase, or issue a procedural maintenance step.
+- A result card exposes document ID, revision, title, ATA path where present, exact source location, source hash, gate outcomes, and controlled-viewer link. The authorized human reads the controlled source before taking any operational action.
+- Historical cases remain P1 contextual evidence. They are excluded from P0 fusion and cannot support a current technical claim.
+
 #### Query decomposition
 
-Generate source-specific tasks rather than one broad query:
+Generate source-specific tasks rather than one broad query. Each task declares why it exists, which source family it may search, and what evidence would resolve it:
 
 ```yaml
 search_tasks:
   - source_type: AMM
     objective: locate inspection or maintenance task
     query: string
+    required_fields: [aircraft_family, configuration, ATA]
     filters: object
+    reason: string
   - source_type: MEL
-    objective: validate dispatch-condition reference entered by user
+    objective: validate entered reference and current revision
     query: string
+    required_fields: [aircraft_family, entered_reference]
     filters: object
+    reason: string
   - source_type: TSM
     objective: locate troubleshooting path for reported symptom
     query: string
+    required_fields: [symptom, ATA]
     filters: object
+    reason: string
 ```
 
 #### Parallel retrieval paths
 
-1. **Semantic path** — retrieves conceptually related passages.
-2. **Lexical path** — finds exact AMM tasks, MEL items, ATA codes, and technical terms.
-3. **Revision/temporal path** — validates entered revision and supersession chain.
-4. **Metadata path** — applies aircraft, configuration, document type, and approval filters.
-5. **Graph path** — follows explicit references among procedures and sections.
-6. **Historical path** — retrieves similar cases as contextual evidence only.
+1. **Semantic path** — retrieves conceptually related task metadata and returns a controlled source location.
+2. **Lexical path** — finds exact AMM tasks, MEL items, ATA codes, reference numbers, and technical terms.
+3. **Registry path** — resolves document identity, source location, revision chain, approval status, effectivity metadata, and an exact entered reference.
+4. **Reference-parser path** — extracts explicit references from a current, applicable source and turns each mandatory reference into an exact registry lookup.
+
+The deterministic eligibility pre-filter—registry identity, source, ACL, approval, current revision, and applicability/effectivity—runs before fusion. Evidence that fails it is retained only as rejected evidence in the trace; it cannot be passed as valid context to fusion, reranking, or synthesis.
 
 #### Hybrid fusion
 
-Use reciprocal-rank fusion or weighted normalized scores:
+Use versioned reciprocal-rank fusion (RRF) for candidates that pass the deterministic pre-filter:
 
 ```text
-fusion_score =
-    w_semantic * semantic_score
-  + w_lexical  * lexical_score
-  + w_exact    * exact_reference_match
-  + w_graph    * graph_proximity
-  + w_history  * historical_similarity
+RRF(document) =
+    1 / (k + semantic_rank)
+  + 1 / (k + lexical_rank)
+  + 1 / (k + exact_reference_rank)
 ```
 
-Weights may be proposed by the weighting agent but must remain within configured limits. Source-authority class and deterministic metadata filters are not model-controlled weights.
+Store each contributing rank and the fusion configuration in the trace. Do not use an agent-selected weighting path in P0. Source authority and deterministic metadata are eligibility conditions, not relevance weights.
 
 #### Reranking
 
 Recommended order:
 
-1. deterministic pre-filter;
-2. hybrid fusion;
-3. cross-encoder or LLM-assisted reranking;
-4. deterministic evidence gates.
+1. semantic, lexical, and exact-reference retrieval;
+2. registry, source, ACL, approval, current revision, and applicability/effectivity pre-filter;
+3. RRF with modality-level provenance retained;
+4. cross-encoder reranking of a bounded candidate set;
+5. deterministic cross-reference, conflict, citation, and completeness gates.
 
-Reranking changes result order only. It cannot make failed evidence valid.
+Reranking changes candidate order only. It cannot make failed evidence valid, create a cross-reference, or decide an operational outcome.
 
 ### 9.2 Cross-reference loop
 
-A mandatory cross-reference creates a structured work item:
+A mandatory reference is parsed from the current, applicable source and creates a structured work item. This is a registry lookup followed by normal evidence gates; it is not an inferred relationship.
 
 ```yaml
 cross_reference:
   from_evidence_id: string
+  from_revision_id: string
+  source_location: string
   reference_type: AMM_TASK | MEL_ITEM | CDL_ITEM | TSM_STEP | OTHER
   target_reference: string
   mandatory: boolean
@@ -571,14 +580,15 @@ cross_reference:
 
 Routing rules:
 
-- `mandatory=true` and `UNRESOLVED` → follow-up retrieval.
-- Retry budget available → return to retrieval strategy team.
+- `mandatory=true` and `UNRESOLVED` → create one visible, targeted follow-up task with the reference number and originating source location.
+- Retry budget available → return to the supervisor, which may refine only the failed task or request missing input.
 - Retry budget exhausted → `ABSTAINED` or `ESCALATED`.
 - Optional reference unresolved → visible limitation; does not automatically block unless a policy rule says otherwise.
+- A resolved reference must independently pass source, ACL, approval, registry, current-revision, applicability/effectivity, citation, and conflict gates before supporting a claim.
 
 ### 9.3 Independent review critic
 
-The critic is an LLM-assisted verifier with no write privileges. It checks:
+The critic is a separate, read-only verifier. It receives the package, cited spans, gate results, and trace summary—not authority to change source metadata or workflow state. It checks:
 
 - whether every claim is atomic;
 - whether each citation resolves;
@@ -589,6 +599,17 @@ The critic is an LLM-assisted verifier with no write privileges. It checks:
 - whether the proposed final state matches deterministic gate results.
 
 A critic pass is necessary but never sufficient to override a failed deterministic gate.
+
+### 9.4 Research validation and limits
+
+The workflow is informed by, not validated by, these papers:
+
+| Paper | Adopted design evidence | Deliberately not claimed or adopted |
+|---|---|---|
+| [Jo, 2026](https://aclanthology.org/2026.eacl-industry.23.pdf) | Stable ATA/task metadata for retrieval; reranked task candidates; controlled-viewer access to exact certified procedure; revision-aware ingestion. | Its retrieval and lookup-time results. Its task-search study does not validate this defect-evidence workflow, synthetic corpus, gates, or claims of regulatory compliance. |
+| [Xie et al., 2025](https://www.nature.com/articles/s41598-025-02643-2) | Complementary vector and BM25 retrieval; cross-encoder reranking; a bounded planner/retrieval/reflection pattern; stepwise user verification. | Its structured-data retrieval path, dataset, F1/hallucination figures, or troubleshooting conclusions. These do not validate this text-and-registry-only MVP. |
+
+Therefore, P0 evaluation must use the frozen evidence-validation dataset and safe-state metrics in Section 16. Do not reuse either paper's performance numbers in a submission or pitch.
 
 ---
 
@@ -610,72 +631,139 @@ validation_issues: list[object]
 plan: list[object]
 search_tasks: list[object]
 retrieval_candidates: list[object]
+retrieval_provenance: list[object]
+eligibility_results: list[object]
+eligible_candidates: list[object]
+fusion_provenance: object
+reranked_candidates: list[object]
+
 validated_evidence: list[EvidenceItem]
 rejected_evidence: list[EvidenceItem]
 
 cross_references: list[object]
 conflicts: list[Conflict]
 claims: list[Claim]
+gate_results:
+  cross_reference: object
+  conflict: object
+  citation: object
+  completeness: object
+
 review_package: object | null
 critic_findings: list[object]
 
 workflow_state: enum
-final_state: enum | null
+final_state: REVIEW_READY | NEEDS_CLARIFICATION | ESCALATED | ABSTAINED | FAILED | null
+human_review_status: NOT_REQUESTED | PENDING | HUMAN_REVIEWED | RETURNED_FOR_CORRECTION
 human_review: object | null
+feedback_event: object | null
 
 counters:
-  graph_steps: integer
+  reference_resolution_steps: integer
   retrieval_loops: integer
+  critic_retries: integer
   tool_calls: integer
   model_calls: integer
+  runtime_elapsed_seconds: number
 
 limits:
-  max_graph_steps: integer
+  max_reference_resolution_steps: integer
   max_retrieval_loops: integer
+  max_critic_retries: integer
   max_tool_calls: integer
+  max_parallel_retrieval_tasks: integer
+  max_candidates_per_path: integer
+  max_rerank_candidates: integer
   max_runtime_seconds: integer
+  per_tool_timeout_seconds: integer
+  retry_count_per_tool: integer
 
 trace_context:
   langfuse_trace_id: string
   correlation_id: string
 ```
 
+State-field rules:
+
+- `eligibility_results` records registry, source, ACL, approval, current-revision, and applicability/effectivity outcomes for every candidate.
+- `retrieval_provenance` records the search task, retrieval path, query, filters, rank, score, and source snapshot.
+- `fusion_provenance` records contributing ranks and the versioned RRF configuration; `reranked_candidates` records only bounded ordering and never changes eligibility.
+- `final_state` is restricted to the five agent outcomes defined in Section 1; `HUMAN_REVIEWED` is recorded separately in `human_review_status`.
+- `feedback_event` is queued after human action as an asynchronous side effect. It cannot change `workflow_state` or reopen a completed run.
+
 ### 10.2 State machine
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DRAFT
-    DRAFT --> VALIDATING_INPUT
-    VALIDATING_INPUT --> NEEDS_CLARIFICATION: critical fields missing
-    VALIDATING_INPUT --> PLANNING: input sufficient
-    PLANNING --> RETRIEVING
-    RETRIEVING --> CHECKING_EVIDENCE
-    CHECKING_EVIDENCE --> RETRIEVING: required follow-up and budget remains
-    CHECKING_EVIDENCE --> NEEDS_CLARIFICATION: user data required
-    CHECKING_EVIDENCE --> ESCALATED: unresolved material conflict
-    CHECKING_EVIDENCE --> ABSTAINED: evidence insufficient or unverified
-    CHECKING_EVIDENCE --> FAILED: bounded retry exhausted
-    CHECKING_EVIDENCE --> REVIEW_READY: all review-ready gates pass
-    REVIEW_READY --> HUMAN_REVIEWED: explicit reviewer action
-    ESCALATED --> HUMAN_REVIEWED: human resolution recorded
-    NEEDS_CLARIFICATION --> VALIDATING_INPUT: user corrects case
-    ABSTAINED --> VALIDATING_INPUT: new evidence or metadata supplied
-    FAILED --> PLANNING: explicit rerun after recovery
+    [*] --> PREFLIGHT
+    PREFLIGHT --> NEEDS_CLARIFICATION: required input missing
+    NEEDS_CLARIFICATION --> PREFLIGHT: corrected case supplied; new run
+    PREFLIGHT --> PLANNING: input ready
+
+    PLANNING --> RETRIEVING: bounded source-specific tasks
+    RETRIEVING --> ELIGIBILITY_FILTER
+    ELIGIBILITY_FILTER --> FUSING: eligible candidates remain
+    ELIGIBILITY_FILTER --> ABSTAINED: no eligible evidence
+    FUSING --> RERANKING: versioned RRF
+    RERANKING --> CROSS_REFERENCE_CHECK
+
+    CROSS_REFERENCE_CHECK --> CONFLICT_CHECK: mandatory references resolved
+    CROSS_REFERENCE_CHECK --> PLANNING: targeted task and loop budget remains
+    CROSS_REFERENCE_CHECK --> ABSTAINED: mandatory evidence missing; budget exhausted
+    CROSS_REFERENCE_CHECK --> ESCALATED: material conflict unresolved; budget exhausted
+
+    CONFLICT_CHECK --> PLANNING: targeted evidence needed and loop budget remains
+    CONFLICT_CHECK --> ESCALATED: material conflict unresolved; budget exhausted
+    CONFLICT_CHECK --> CITATION_CHECK: consistent
+    CITATION_CHECK --> COMPLETENESS_CHECK
+
+    COMPLETENESS_CHECK --> NEEDS_CLARIFICATION: critical input missing
+    COMPLETENESS_CHECK --> ESCALATED: material conflict
+    COMPLETENESS_CHECK --> ABSTAINED: evidence insufficient
+    COMPLETENESS_CHECK --> FAILED: unrecoverable tool or system failure
+    COMPLETENESS_CHECK --> DRAFTING_PACKAGE: all deterministic gates pass
+
+    DRAFTING_PACKAGE --> CRITIC_REVIEW
+    CRITIC_REVIEW --> PLANNING: missing check and retry budget remains
+    CRITIC_REVIEW --> ABSTAINED: mandatory evidence missing; budget exhausted
+    CRITIC_REVIEW --> ESCALATED: material conflict unresolved; budget exhausted
+    CRITIC_REVIEW --> REVIEW_READY: valid
+
+    REVIEW_READY --> HUMAN_REVIEW: authorized reviewer opens controlled source
+    ESCALATED --> HUMAN_REVIEW: human resolution requested
+    HUMAN_REVIEW --> HUMAN_REVIEWED: approved or resolution recorded
+    HUMAN_REVIEW --> NEEDS_CLARIFICATION: returned for correction; new run
+
+    note right of HUMAN_REVIEW
+      Emit feedback event asynchronously.
+      No workflow transition.
+    end note
+
+    ABSTAINED --> [*]
+    FAILED --> [*]
+    HUMAN_REVIEWED --> [*]
 ```
+
+`REVIEW_READY` and `ESCALATED` are agent-run outcomes that may open an authorized human-review phase. `ABSTAINED` and `FAILED` end without review. `HUMAN_REVIEWED` ends the human-review phase and is recorded in `human_review_status`, not `final_state`. Any correction, new evidence, or recovered infrastructure starts a new pinned run and trace; it never mutates a terminal run.
 
 ### 10.3 Bounded execution defaults
 
 Hackathon configuration, adjustable by environment:
 
 ```yaml
-max_graph_steps: 20
+max_reference_resolution_steps: 20
 max_retrieval_loops: 3
+max_critic_retries: 1
 max_tool_calls: 30
 max_parallel_retrieval_tasks: 6
+max_candidates_per_path: 20
+max_rerank_candidates: 20
 max_runtime_seconds: 30
 per_tool_timeout_seconds: 8
 retry_count_per_tool: 2
 ```
+
+The supervisor may retry only the failed search task or missing check. Counters persist across every loop; no node may reset them. Exhausting any configured retrieval, reference-resolution, critic, tool-call, retry, timeout, or runtime limit routes to `ABSTAINED` or `ESCALATED` and states which work remains incomplete. `FAILED` is reserved for a non-budget, unrecoverable tool or system failure.
 
 These are targets for the curated demo, not production service-level guarantees.
 
