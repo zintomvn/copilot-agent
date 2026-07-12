@@ -35,6 +35,86 @@ function compactEventName(value) {
   return String(value || "").replaceAll("_", " ").toLowerCase();
 }
 
+const ANSWER_LABELS = [
+  ["final", "Final answer:"],
+  ["fix", "Fix path for authorized maintenance:"],
+  ["status", "Final status:"],
+  ["citations", "Citations:"]
+];
+
+function parseCitationRows(value) {
+  const rows = String(value || "").match(/SYN-[A-Z0-9-]+:\s*.*?(?=\s+SYN-[A-Z0-9-]+:|$)/g) || [];
+  return rows.map((row) => {
+    const marker = row.indexOf(":");
+    return {
+      reference: row.slice(0, marker).trim(),
+      text: row.slice(marker + 1).trim()
+    };
+  });
+}
+
+function parseAnswerSections(answer) {
+  const text = String(answer || "").trim();
+  const positions = ANSWER_LABELS
+    .map(([key, label]) => ({ key, label, index: text.indexOf(label) }))
+    .filter((item) => item.index >= 0)
+    .sort((left, right) => left.index - right.index);
+
+  if (positions.length === 0) {
+    return { final: text, fix: "", status: "", citations: [] };
+  }
+
+  const sections = { final: "", fix: "", status: "", citations: [] };
+  positions.forEach((item, index) => {
+    const start = item.index + item.label.length;
+    const end = positions[index + 1]?.index ?? text.length;
+    const content = text.slice(start, end).trim();
+    if (item.key === "citations") {
+      sections.citations = parseCitationRows(content);
+    } else {
+      sections[item.key] = content;
+    }
+  });
+  return sections;
+}
+
+function AnswerContent({ answer }) {
+  const sections = parseAnswerSections(answer);
+  return (
+    <div className="answer-layout">
+      {sections.final && (
+        <div className="answer-section final">
+          <strong>Final answer</strong>
+          <p>{sections.final}</p>
+        </div>
+      )}
+      {sections.fix && (
+        <div className="answer-section fix-path">
+          <strong>Fix path for authorized maintenance</strong>
+          <p>{sections.fix}</p>
+        </div>
+      )}
+      {sections.status && (
+        <div className="answer-status-row">
+          <span>Final status</span>
+          <strong className={statusClass(sections.status)}>{sections.status}</strong>
+        </div>
+      )}
+      {sections.citations.length > 0 && (
+        <div className="answer-citations">
+          <strong>Citations</strong>
+          {sections.citations.map((citation) => (
+            <div className="answer-citation" key={citation.reference}>
+              <span>{citation.reference}</span>
+              <p>{citation.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Message({ message, onChoiceSelect, disabled }) {
   const isUser = message.role === "user";
   const Icon = isUser ? User : message.kind === "tools" ? Wrench : Bot;
@@ -44,7 +124,7 @@ function Message({ message, onChoiceSelect, disabled }) {
         <Icon size={17} />
       </div>
       <div className="bubble">
-        <p>{message.content}</p>
+        {message.kind === "answer" ? <AnswerContent answer={message.content} /> : <p>{message.content}</p>}
         {message.kind === "clarification" && Array.isArray(message.items) && message.items.length > 0 && (
           <div className="choice-grid">
             {message.items.map((item) => (
@@ -149,7 +229,7 @@ function AnswerPanel({ result }) {
         <MessageSquare size={16} />
         <h2>Answer</h2>
       </div>
-      <p>{result.answer}</p>
+      <AnswerContent answer={result.answer} />
     </section>
   );
 }

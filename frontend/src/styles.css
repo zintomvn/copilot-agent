@@ -288,6 +288,79 @@ h2 {
   line-height: 1.45;
 }
 
+.answer-layout {
+  display: grid;
+  gap: 11px;
+}
+
+.answer-section {
+  display: grid;
+  gap: 5px;
+}
+
+.answer-section strong,
+.answer-citations > strong {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.answer-section p,
+.answer-citation p {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.48;
+}
+
+.answer-section.fix-path {
+  border-left: 3px solid var(--teal);
+  padding: 8px 0 8px 11px;
+  background: linear-gradient(90deg, rgba(15, 139, 141, 0.08), transparent 82%);
+}
+
+.answer-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(102, 119, 135, 0.18);
+  padding-top: 9px;
+}
+
+.answer-status-row span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.answer-status-row strong {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.answer-citations {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid rgba(102, 119, 135, 0.18);
+  padding-top: 9px;
+}
+
+.answer-citation {
+  display: grid;
+  gap: 4px;
+}
+
+.answer-citation span {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .choice-grid {
   display: grid;
   gap: 8px;
@@ -560,8 +633,7 @@ button:focus-visible {
 }
 
 .evidence-mini p,
-.prompt-block p,
-.answer-card p {
+.prompt-block p {
   margin: 8px 0 0;
   color: var(--ink);
   font-size: 12px;
