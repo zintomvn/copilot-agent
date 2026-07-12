@@ -236,13 +236,49 @@ class ConversationCoordinator:
 def build_user_answer(result: dict[str, Any]) -> str:
     package = result.get("review_package") or {}
     final_state = result.get("final_state") or "FAILED"
-    claim_texts = [claim.get("claim_text") for claim in package.get("claims", []) if claim.get("claim_text")]
-    key_points = "; ".join(claim_texts[:3])
+    evidence = cited_evidence(package)
+    citation_lines = [
+        f"{item.get('reference_number')}: {item.get('quoted_span')}"
+        for item in evidence
+        if item.get("reference_number") and item.get("quoted_span")
+    ]
     if final_state == "REVIEW_READY":
-        summary = package.get("case_summary") or "The case is ready for authorized human review."
+        linked_reference = next(
+            (
+                item.get("target_reference")
+                for item in package.get("cross_references", [])
+                if item.get("status") == "RESOLVED" and item.get("target_reference")
+            ),
+            None,
+        )
+        if linked_reference is None:
+            linked_reference = next(
+                (
+                    item.get("reference_number")
+                    for item in evidence
+                    if item.get("document_type") == "AMM" and item.get("reference_number")
+                ),
+                None,
+            )
+        next_step = (
+            "Do not troubleshoot the aircraft yourself. Ask authorized maintenance personnel "
+            "to record the indication defect"
+        )
+        if linked_reference:
+            next_step += f" and perform or verify {linked_reference}"
+        next_step += ", then record observed results for authorized human review."
+        fix_path = ""
+        if linked_reference:
+            fix_path = (
+                " Fix path for authorized maintenance: use "
+                f"{linked_reference} as the controlled source for the prescribed operational "
+                "check, record observed results, and decide any repair only through the "
+                "authorized maintenance workflow."
+            )
+        citations = " ".join(citation_lines[:4]) or "Cited evidence is attached below."
         return (
-            f"{summary} Final status: {final_state}. "
-            f"Key supported points: {key_points or 'Cited evidence is attached below.'}"
+            f"Final answer: {next_step}{fix_path} Final status: {final_state}. "
+            f"Citations: {citations}"
         )
     limitations = package.get("limitations", [])
     next_action = package.get("required_human_actions", [])
@@ -251,6 +287,18 @@ def build_user_answer(result: dict[str, Any]) -> str:
         f"Why it stopped: {result.get('route_reason') or 'The evidence gate did not clear.'} "
         f"{' '.join(limitations[:2])} {' '.join(next_action[:1])}".strip()
     )
+
+
+def cited_evidence(package: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence = package.get("evidence", [])
+    cited_ids = {
+        evidence_id
+        for claim in package.get("claims", [])
+        for evidence_id in claim.get("evidence_ids", [])
+    }
+    if not cited_ids:
+        return evidence
+    return [item for item in evidence if item.get("evidence_id") in cited_ids]
 
 
 def prompt_bundle(profile: str) -> dict[str, Any]:
@@ -270,4 +318,3 @@ def prompt_bundle(profile: str) -> dict[str, Any]:
         "critic": CRITIC_SUBAGENT_PROMPT.strip(),
         "profile_instructions": PROMPT_PROFILE_INSTRUCTIONS.get(profile, "").strip(),
     }
-

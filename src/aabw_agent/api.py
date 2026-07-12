@@ -14,7 +14,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from .config import Settings, get_settings
-from .conversation import ConversationCoordinator, ConversationSession, build_user_answer, prompt_bundle
+from .conversation import (
+    ConversationCoordinator,
+    ConversationSession,
+    build_user_answer,
+    cited_evidence,
+    prompt_bundle,
+)
 from .evaluate import load_jsonl
 from .pdf_ingest import build_corpus_from_pdf
 from .workflow import WorkflowRunner
@@ -128,7 +134,9 @@ def _langfuse_trace_url(settings: Settings, trace_id: str | None) -> str | None:
 _CUSTOM_CHAT_SESSIONS: dict[str, ConversationSession] = {}
 
 
-def _workflow_response(result: dict[str, Any], settings: Settings, include_events: bool) -> dict[str, Any]:
+def _workflow_response(
+    result: dict[str, Any], settings: Settings, include_events: bool
+) -> dict[str, Any]:
     events = _trace_events(result["trace_context"].get("local_trace_path"))
     trace_id = result["trace_context"].get("langfuse_trace_id")
     package = result.get("review_package") or {}
@@ -144,7 +152,7 @@ def _workflow_response(result: dict[str, Any], settings: Settings, include_event
         "tool_calls": [event for event in events if event.get("event_type") == "tool"],
         "events": events if include_events else [],
         "review_package": package,
-        "citations": package.get("evidence", []),
+        "citations": cited_evidence(package),
         "claims": package.get("claims", []),
         "gate_results": result.get("gate_results", {}),
         "cross_references": result.get("cross_references", []),
