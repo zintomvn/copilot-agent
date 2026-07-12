@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -51,7 +53,7 @@ class Settings(BaseSettings):
     ingested_corpus_path: Path = Path("data/ingested_corpus.json")
     api_host: str = "127.0.0.1"
     api_port: int = 8000
-    cors_origins: list[str] = Field(
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
@@ -83,6 +85,26 @@ class Settings(BaseSettings):
             # Prevent malformed .env secrets from crashing demo startup.
             if normalized.startswith(("sk-", "pk-", "sk_", "pk_")):
                 return False
+        return value
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: object) -> list[str] | object:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return []
+            parsed: object
+            try:
+                parsed = json.loads(raw)
+            except json.JSONDecodeError:
+                parts = [item.strip().strip("\"'") for item in raw.strip("[]").split(",")]
+                return [item for item in parts if item]
+            value = parsed
+        if isinstance(value, (list, tuple, set)):
+            return [str(item).strip() for item in value if str(item).strip()]
         return value
 
     @field_validator("cors_origins", mode="after")

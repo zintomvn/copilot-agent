@@ -50,6 +50,25 @@ def test_retrieval_top_k_default_matches_architecture() -> None:
     assert settings.retrieval_top_k == 13
 
 
+def test_cors_origins_accept_json_env_string() -> None:
+    settings = Settings(
+        cors_origins='["https://copilot-agent-hkt5.vercel.app","https://example.com"]'
+    )
+
+    assert "https://copilot-agent-hkt5.vercel.app" in settings.cors_origins
+    assert "https://example.com" in settings.cors_origins
+    assert "http://localhost:5174" in settings.cors_origins
+
+
+def test_cors_origins_accept_loose_comma_separated_env_string() -> None:
+    settings = Settings(
+        cors_origins='[http://localhost:5173, https://copilot-agent-hkt5.vercel.app]'
+    )
+
+    assert "http://localhost:5173" in settings.cors_origins
+    assert "https://copilot-agent-hkt5.vercel.app" in settings.cors_origins
+
+
 def test_ingestion_to_workflow_contract_round_trip() -> None:
     payload = {
         "case_id": "CASE-INGEST-001",
