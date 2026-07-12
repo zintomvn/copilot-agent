@@ -59,7 +59,7 @@ class JSONModelClient:
                 api_key=self.settings.openai_api_key or "local",
                 max_tokens=self.settings.max_output_tokens_per_call,
                 max_retries=0,
-                timeout=self.settings.per_tool_timeout_seconds,
+                timeout=self.settings.model_timeout_seconds,
                 use_responses_api=False,
             )
         return self._client

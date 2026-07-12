@@ -11,6 +11,10 @@ venv/
 env/
 conda-env/
 
+# JavaScript dependencies
+node_modules/
+frontend/node_modules/
+
 # Python generated files
 __pycache__/
 *.py[cod]

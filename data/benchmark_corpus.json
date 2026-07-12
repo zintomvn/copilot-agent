@@ -1,0 +1,674 @@
+{
+  "schema_version": "1.0.0",
+  "corpus_id": "aabw-a320-benchmark-v1",
+  "source_snapshot_id": "synthetic-snapshot-aabw-benchmark-2026-07-12-v1",
+  "synthetic": true,
+  "operational_use_prohibited": true,
+  "notice": "SYNTHETIC BENCHMARK DATA. NOT AN APPROVED MAINTENANCE SOURCE. NOT FOR OPERATIONAL, AIRWORTHINESS, DISPATCH, OR RELEASE-TO-SERVICE DECISIONS.",
+  "documents": [
+    {
+      "document_id": "SYN-MEL-CURRENT",
+      "evidence_id": "EV-SYN-MEL-CURRENT-32-01",
+      "document_type": "MEL",
+      "title": "Synthetic A320 MEL - Landing Gear Indication",
+      "reference_number": "SYN-MEL-CURRENT",
+      "canonical_reference": "SYN-MEL-32-01",
+      "revision_id": "R3",
+      "revision_date": "2026-06-01",
+      "supersedes_revision": "R2",
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "32",
+      "section_id": "MEL-32-01-IND",
+      "page_or_location": "Synthetic MEL 32-01, item 1",
+      "quoted_span": "For intermittent landing gear green indication after gear extension, record the indication defect and perform the mandatory linked operational check in SYN-AMM-LINKED-CHECK before preparing the evidence package for authorized review.",
+      "content": "Intermittent landing gear green indication after gear extension. This synthetic MEL item requires the linked landing gear indication operational check. Mandatory reference: SYN-AMM-LINKED-CHECK.",
+      "keywords": [
+        "landing gear",
+        "green indication",
+        "intermittent",
+        "gear extension",
+        "MEL",
+        "ATA 32"
+      ],
+      "cross_references": [
+        {
+          "reference_type": "AMM_TASK",
+          "target_reference": "SYN-AMM-LINKED-CHECK",
+          "mandatory": true
+        }
+      ],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-a320/MEL/SYN-MEL-CURRENT/R3/MEL-32-01-IND",
+      "source_hash": "sha256:synthetic-mel-current-r3-32-01",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-AMM-LINKED-CHECK",
+      "evidence_id": "EV-SYN-AMM-LINKED-CHECK-32-31",
+      "document_type": "AMM",
+      "title": "Synthetic A320 AMM - Landing Gear Indication Operational Check",
+      "reference_number": "SYN-AMM-LINKED-CHECK",
+      "canonical_reference": "SYN-AMM-32-31-00-710-801",
+      "revision_id": "R5",
+      "revision_date": "2026-05-15",
+      "supersedes_revision": "R4",
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "32",
+      "section_id": "AMM-32-31-00-710-801",
+      "page_or_location": "Synthetic AMM task 32-31-00-710-801, steps 1-4",
+      "quoted_span": "Perform the synthetic landing gear indication operational check for configuration SYN-CFG-LG-A. Confirm indication behavior through the prescribed test sequence and record observed results for authorized human review.",
+      "content": "Synthetic operational check for intermittent landing gear green indication after gear extension. Applies only to A320 configuration SYN-CFG-LG-A. Record results; this evidence does not authorize dispatch or release to service.",
+      "keywords": [
+        "landing gear",
+        "green indication",
+        "operational check",
+        "AMM",
+        "ATA 32",
+        "SYN-CFG-LG-A"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-a320/AMM/SYN-AMM-LINKED-CHECK/R5/AMM-32-31-00-710-801",
+      "source_hash": "sha256:synthetic-amm-linked-check-r5-32-31",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-MEL-SUPERSEDED",
+      "evidence_id": "EV-SYN-MEL-SUPERSEDED-32-01",
+      "document_type": "MEL",
+      "title": "Synthetic A320 MEL - Landing Gear Indication (Superseded)",
+      "reference_number": "SYN-MEL-SUPERSEDED",
+      "canonical_reference": "SYN-MEL-32-01",
+      "revision_id": "R2",
+      "revision_date": "2025-10-01",
+      "supersedes_revision": "R1",
+      "superseded_by_revision": "R3",
+      "revision_status": "SUPERSEDED",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "32",
+      "section_id": "MEL-32-01-IND-OLD",
+      "page_or_location": "Synthetic MEL R2 32-01, item 1",
+      "quoted_span": "Superseded synthetic wording for intermittent landing gear green indication after gear extension.",
+      "content": "Intermittent landing gear green indication after gear extension. Old synthetic MEL revision retained to verify that revision gates reject stale evidence.",
+      "keywords": [
+        "landing gear",
+        "green indication",
+        "intermittent",
+        "gear extension",
+        "MEL",
+        "ATA 32"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-a320/MEL/SYN-MEL-SUPERSEDED/R2/MEL-32-01-IND-OLD",
+      "source_hash": "sha256:synthetic-mel-superseded-r2-32-01",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-AMM-WRONG-EFFECTIVITY",
+      "evidence_id": "EV-SYN-AMM-WRONG-EFFECTIVITY-32-31",
+      "document_type": "AMM",
+      "title": "Synthetic A320 AMM - Alternate Landing Gear Sensor Check",
+      "reference_number": "SYN-AMM-WRONG-EFFECTIVITY",
+      "canonical_reference": "SYN-AMM-32-31-00-710-899",
+      "revision_id": "R1",
+      "revision_date": "2026-04-10",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-B"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-B"
+        ]
+      },
+      "applicability_status": "FAIL",
+      "ata_chapter": "32",
+      "section_id": "AMM-32-31-00-710-899",
+      "page_or_location": "Synthetic AMM task 32-31-00-710-899",
+      "quoted_span": "This alternate synthetic sensor check applies only to A320 configuration SYN-CFG-LG-B and must not support a SYN-CFG-LG-A case.",
+      "content": "Alternate landing gear green indication sensor check. Text is deliberately similar, but effectivity is configuration SYN-CFG-LG-B, not SYN-CFG-LG-A.",
+      "keywords": [
+        "landing gear",
+        "green indication",
+        "sensor check",
+        "AMM",
+        "ATA 32"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-a320/AMM/SYN-AMM-WRONG-EFFECTIVITY/R1/AMM-32-31-00-710-899",
+      "source_hash": "sha256:synthetic-amm-wrong-effectivity-r1",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-MEL-REJECTED",
+      "evidence_id": "EV-SYN-MEL-REJECTED-32-01",
+      "document_type": "MEL",
+      "title": "Synthetic Draft MEL - Landing Gear Indication",
+      "reference_number": "SYN-MEL-REJECTED",
+      "canonical_reference": "SYN-MEL-32-01-DRAFT",
+      "revision_id": "DRAFT-1",
+      "revision_date": "2026-06-20",
+      "supersedes_revision": null,
+      "revision_status": "UNKNOWN",
+      "approval_status": "REJECTED",
+      "source_authority": "SUPPORTING",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "32",
+      "section_id": "DRAFT-MEL-32-01",
+      "page_or_location": "Rejected synthetic draft, section 32-01",
+      "quoted_span": "Rejected draft text retained only to verify approval gating; it cannot support a claim.",
+      "content": "Draft landing gear green indication proposal. Rejected synthetic source; retrieval may find it, but approval validation must exclude it.",
+      "keywords": [
+        "landing gear",
+        "green indication",
+        "draft",
+        "MEL",
+        "ATA 32"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-a320/rejected/SYN-MEL-REJECTED/DRAFT-1",
+      "source_hash": "sha256:synthetic-mel-rejected-draft-1",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-MEL-UNRESOLVED-XREF",
+      "evidence_id": "EV-SYN-MEL-UNRESOLVED-XREF-32-02",
+      "document_type": "MEL",
+      "title": "Synthetic A320 MEL - Unresolvable Cross-Reference Fixture",
+      "reference_number": "SYN-MEL-UNRESOLVED-XREF",
+      "canonical_reference": "SYN-MEL-32-02",
+      "revision_id": "R1",
+      "revision_date": "2026-06-05",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "32",
+      "section_id": "MEL-32-02-XREF",
+      "page_or_location": "Synthetic MEL 32-02, unresolved-reference fixture",
+      "quoted_span": "This fixture requires SYN-AMM-NOT-IN-CORPUS. The target is intentionally absent, so the package must not become review-ready.",
+      "content": "Landing gear indication fixture with a mandatory cross-reference intentionally absent from the allow-listed synthetic corpus.",
+      "keywords": [
+        "landing gear",
+        "indication",
+        "missing reference",
+        "MEL",
+        "ATA 32"
+      ],
+      "cross_references": [
+        {
+          "reference_type": "AMM_TASK",
+          "target_reference": "SYN-AMM-NOT-IN-CORPUS",
+          "mandatory": true
+        }
+      ],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-a320/MEL/SYN-MEL-UNRESOLVED-XREF/R1/MEL-32-02-XREF",
+      "source_hash": "sha256:synthetic-mel-unresolved-xref-r1",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-HIST-LG-001",
+      "evidence_id": "EV-SYN-HIST-LG-001",
+      "document_type": "HISTORICAL_RECORD",
+      "title": "Synthetic Historical Case - Intermittent Green Indication",
+      "reference_number": "SYN-HIST-LG-001",
+      "canonical_reference": "SYN-HIST-LG-001",
+      "revision_id": "V1",
+      "revision_date": "2026-01-12",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "HISTORICAL_CONTEXT",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "32",
+      "section_id": "CASE-LG-001",
+      "page_or_location": "Synthetic historical case LG-001",
+      "quoted_span": "A prior synthetic case recorded intermittent green indication after extension and routed the reviewer to current MEL and AMM evidence. Historical context is non-authoritative.",
+      "content": "Prior synthetic A320 case with intermittent landing gear green indication after extension. Similar-case context only; cannot override manuals or deterministic gates.",
+      "keywords": [
+        "historical",
+        "landing gear",
+        "green indication",
+        "intermittent",
+        "A320"
+      ],
+      "case_features": {
+        "symptoms": [
+          "intermittent green indication"
+        ],
+        "flight_phase_or_context": "after gear extension",
+        "ata_chapter": "32"
+      },
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-a320/history/SYN-HIST-LG-001/V1",
+      "source_hash": "sha256:synthetic-history-lg-001-v1",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-TSM-DOOR-FAULT",
+      "evidence_id": "EV-SYN-TSM-DOOR-FAULT-52-10",
+      "document_type": "TSM",
+      "title": "Synthetic A320 TSM - Door Proximity Fault",
+      "reference_number": "SYN-TSM-DOOR-FAULT",
+      "canonical_reference": "SYN-TSM-52-10-FAULT",
+      "revision_id": "R2",
+      "revision_date": "2026-05-20",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "52",
+      "section_id": "TSM-52-10-00-FI",
+      "page_or_location": "Synthetic A320 TSM - Door Proximity Fault, TSM-52-10-00-FI",
+      "quoted_span": "For an intermittent passenger door proximity message on A320 configuration SYN-CFG-LG-A, use the synthetic fault isolation task and record results for authorized review.",
+      "content": "Intermittent passenger door proximity message. Synthetic TSM fault isolation applies to A320 configuration SYN-CFG-LG-A.",
+      "keywords": [
+        "door",
+        "proximity",
+        "fault isolation",
+        "TSM",
+        "ATA 52"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-benchmark/SYN-TSM-DOOR-FAULT/R2/TSM-52-10-00-FI",
+      "source_hash": "sha256:syn-tsm-door-fault-r2",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-CDL-PANEL-FAIRING",
+      "evidence_id": "EV-SYN-CDL-PANEL-FAIRING-53-20",
+      "document_type": "CDL",
+      "title": "Synthetic A320 CDL - Access Panel Fairing",
+      "reference_number": "SYN-CDL-PANEL-FAIRING",
+      "canonical_reference": "SYN-CDL-53-20-PANEL",
+      "revision_id": "R1",
+      "revision_date": "2026-04-18",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "53",
+      "section_id": "CDL-53-20-PANEL",
+      "page_or_location": "Synthetic A320 CDL - Access Panel Fairing, CDL-53-20-PANEL",
+      "quoted_span": "For a synthetic access panel fairing discrepancy, check configuration SYN-CFG-LG-A effectivity and prepare the cited package for human review.",
+      "content": "Access panel fairing discrepancy. CDL context applies to A320 SYN-CFG-LG-A and is controlled benchmark evidence.",
+      "keywords": [
+        "access panel",
+        "fairing",
+        "CDL",
+        "ATA 53"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-benchmark/SYN-CDL-PANEL-FAIRING/R1/CDL-53-20-PANEL",
+      "source_hash": "sha256:syn-cdl-panel-fairing-r1",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-ENG-PROC-FCTL-TRIM",
+      "evidence_id": "EV-SYN-ENG-PROC-FCTL-TRIM-27-00",
+      "document_type": "ENGINEERING_PROCEDURE",
+      "title": "Synthetic Engineering Procedure - Flight Control Trim Review",
+      "reference_number": "SYN-ENG-PROC-FCTL-TRIM",
+      "canonical_reference": "SYN-ENG-27-00-FCTL-TRIM",
+      "revision_id": "R4",
+      "revision_date": "2026-06-03",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "27",
+      "section_id": "ENG-27-00-FCTL-TRIM",
+      "page_or_location": "Synthetic Engineering Procedure - Flight Control Trim Review, ENG-27-00-FCTL-TRIM",
+      "quoted_span": "For flight control trim message review, collect current manual references and route the package to an authorized reviewer; this procedure is not an approval for dispatch.",
+      "content": "Flight control trim message review procedure. Collect current evidence and route to authorized human review.",
+      "keywords": [
+        "flight control",
+        "trim",
+        "engineering procedure",
+        "ATA 27"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-benchmark/SYN-ENG-PROC-FCTL-TRIM/R4/ENG-27-00-FCTL-TRIM",
+      "source_hash": "sha256:syn-eng-proc-fctl-trim-r4",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-MEL-HYD-A",
+      "evidence_id": "EV-SYN-MEL-HYD-A-29-01",
+      "document_type": "MEL",
+      "title": "Synthetic A320 MEL - Hydraulic Indication A",
+      "reference_number": "SYN-MEL-HYD-A",
+      "canonical_reference": "SYN-MEL-29-01-HYD",
+      "revision_id": "R1",
+      "revision_date": "2026-06-01",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "29",
+      "section_id": "MEL-29-01-HYD-A",
+      "page_or_location": "Synthetic A320 MEL - Hydraulic Indication A, MEL-29-01-HYD-A",
+      "quoted_span": "Synthetic hydraulic low pressure indication condition A requires a current hydraulic evidence package before authorized review.",
+      "content": "Hydraulic low pressure indication conflict benchmark condition A.",
+      "keywords": [
+        "hydraulic",
+        "low pressure",
+        "MEL",
+        "conflict",
+        "ATA 29"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-benchmark/SYN-MEL-HYD-A/R1/MEL-29-01-HYD-A",
+      "source_hash": "sha256:syn-mel-hyd-a-r1",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-MEL-HYD-B",
+      "evidence_id": "EV-SYN-MEL-HYD-B-29-01",
+      "document_type": "MEL",
+      "title": "Synthetic A320 MEL - Hydraulic Indication B",
+      "reference_number": "SYN-MEL-HYD-B",
+      "canonical_reference": "SYN-MEL-29-01-HYD",
+      "revision_id": "R2",
+      "revision_date": "2026-06-02",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "29",
+      "section_id": "MEL-29-01-HYD-B",
+      "page_or_location": "Synthetic A320 MEL - Hydraulic Indication B, MEL-29-01-HYD-B",
+      "quoted_span": "Synthetic hydraulic low pressure indication condition B intentionally conflicts with another current benchmark revision.",
+      "content": "Hydraulic low pressure indication conflict benchmark condition B.",
+      "keywords": [
+        "hydraulic",
+        "low pressure",
+        "MEL",
+        "conflict",
+        "ATA 29"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-benchmark/SYN-MEL-HYD-B/R2/MEL-29-01-HYD-B",
+      "source_hash": "sha256:syn-mel-hyd-b-r2",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-AMM-UNVERIFIED",
+      "evidence_id": "EV-SYN-AMM-UNVERIFIED-32-99",
+      "document_type": "AMM",
+      "title": "Synthetic Unverified AMM - Landing Gear Sensor",
+      "reference_number": "SYN-AMM-UNVERIFIED",
+      "canonical_reference": "SYN-AMM-32-99-UNVERIFIED",
+      "revision_id": "R1",
+      "revision_date": "2026-06-12",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "UNVERIFIED",
+      "source_authority": "AUTHORITATIVE",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "32",
+      "section_id": "AMM-32-99-UNVERIFIED",
+      "page_or_location": "Synthetic Unverified AMM - Landing Gear Sensor, AMM-32-99-UNVERIFIED",
+      "quoted_span": "Unverified synthetic landing gear sensor note retained for approval gating.",
+      "content": "Unverified landing gear sensor evidence must be rejected by approval gate.",
+      "keywords": [
+        "landing gear",
+        "sensor",
+        "unverified",
+        "AMM",
+        "ATA 32"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-benchmark/SYN-AMM-UNVERIFIED/R1/AMM-32-99-UNVERIFIED",
+      "source_hash": "sha256:syn-amm-unverified-r1",
+      "synthetic": true
+    },
+    {
+      "document_id": "SYN-HIST-GALLEY-001",
+      "evidence_id": "EV-SYN-HIST-GALLEY-001",
+      "document_type": "HISTORICAL_RECORD",
+      "title": "Synthetic Historical Case - Galley Nuisance Message",
+      "reference_number": "SYN-HIST-GALLEY-001",
+      "canonical_reference": "SYN-HIST-GALLEY-001",
+      "revision_id": "V1",
+      "revision_date": "2026-02-02",
+      "supersedes_revision": null,
+      "revision_status": "CURRENT",
+      "approval_status": "APPROVED",
+      "source_authority": "HISTORICAL_CONTEXT",
+      "aircraft_types": [
+        "A320"
+      ],
+      "configurations": [
+        "SYN-CFG-LG-A"
+      ],
+      "effectivity": {
+        "aircraft_types": [
+          "A320"
+        ],
+        "configurations": [
+          "SYN-CFG-LG-A"
+        ]
+      },
+      "applicability_status": "PASS",
+      "ata_chapter": "25",
+      "section_id": "CASE-GALLEY-001",
+      "page_or_location": "Synthetic Historical Case - Galley Nuisance Message, CASE-GALLEY-001",
+      "quoted_span": "A previous synthetic galley nuisance message case is historical context only and cannot support an authoritative technical claim.",
+      "content": "Galley nuisance message historical context only.",
+      "keywords": [
+        "galley",
+        "nuisance",
+        "historical",
+        "ATA 25"
+      ],
+      "cross_references": [],
+      "source_repository": "synthetic-demo-corpus",
+      "source_uri": "synthetic://aabw-benchmark/SYN-HIST-GALLEY-001/V1/CASE-GALLEY-001",
+      "source_hash": "sha256:syn-hist-galley-001-v1",
+      "synthetic": true
+    }
+  ]
+}

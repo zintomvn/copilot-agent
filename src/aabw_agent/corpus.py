@@ -92,7 +92,7 @@ class SyntheticCorpus:
     alter later retrieval results or the loaded snapshot.
     """
 
-    DEFAULT_TOP_K = 5
+    DEFAULT_TOP_K = 13
 
     def __init__(self, path: str | Path | None = None) -> None:
         corpus_path = Path(path) if path is not None else self.default_path()

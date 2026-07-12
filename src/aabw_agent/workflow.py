@@ -12,8 +12,9 @@ from langgraph.graph import END, START, StateGraph
 
 from .config import Settings, get_settings
 from .corpus import SyntheticCorpus
+from .deep_agent import DeepAgentHarness
 from .llm import JSONModelClient, ModelResult
-from .observability import StructuredJSONLLogger, get_logger
+from .observability import LangfuseTelemetry, StructuredJSONLLogger, get_logger
 from .schemas import (
     Claim,
     Counters,
@@ -103,6 +104,8 @@ class WorkflowRunner:
         self.corpus = corpus or SyntheticCorpus(self.settings.corpus_path)
         self.logger: StructuredJSONLLogger | None = None
         self.model: JSONModelClient | None = None
+        self.telemetry: LangfuseTelemetry | None = None
+        self.deep_agent: DeepAgentHarness | None = None
 
     def _log(
         self, actor: str, event_type: str, status: str, details: dict[str, Any] | None = None
@@ -173,8 +176,31 @@ class WorkflowRunner:
         if counters.tool_calls >= limits.max_tool_calls:
             raise BudgetExceeded("max_tool_calls exhausted")
         started = time.perf_counter()
+        client = self.telemetry.client() if self.telemetry else None
         try:
-            output = call()
+            if client is not None:
+                with client.start_as_current_observation(
+                    as_type="span",
+                    name=f"tool:{name}",
+                ) as span:
+                    span.update(
+                        input={"actor": actor, "tool": name},
+                        metadata={
+                            "workflow_version": result["workflow_version"],
+                            "case_id": result["case_id"],
+                            "source_snapshot_id": result["source_snapshot_id"],
+                        },
+                    )
+                    output = call()
+                    span.update(
+                        output={
+                            "result_count": len(output)
+                            if isinstance(output, list)
+                            else int(output is not None)
+                        }
+                    )
+            else:
+                output = call()
         except Exception as exc:
             self._log(
                 actor,
@@ -222,7 +248,23 @@ class WorkflowRunner:
                 > limits.max_total_tokens
             ):
                 raise BudgetExceeded("max_total_tokens reservation exhausted")
-        response = self.model.invoke(actor=actor, system=system, payload=payload, fallback=fallback)
+        if (
+            self.deep_agent is not None
+            and actor in {"orchestrator", "independent_critic"}
+            and self.settings.enable_deep_agent
+        ):
+            response = self.deep_agent.invoke(
+                actor=actor,
+                stage="planning" if actor == "orchestrator" else "critic",
+                payload=payload,
+                fallback=fallback,
+                trace_id=result["trace_context"]["langfuse_trace_id"],
+                correlation_id=result["trace_context"]["correlation_id"],
+            )
+        else:
+            response = self.model.invoke(
+                actor=actor, system=system, payload=payload, fallback=fallback
+            )
         if response.used_fallback:
             result.setdefault("execution_warnings", []).append(
                 f"{actor} used deterministic model fallback; "
@@ -274,15 +316,51 @@ class WorkflowRunner:
         for field, value in required.items():
             if not value or (isinstance(value, str) and not value.strip()):
                 issues.append({"field": field, "code": "REQUIRED", "message": "value required"})
+        for reference in case.get("entered_references", []):
+            document = self.corpus.lookup_document(reference)
+            if not document:
+                issues.append(
+                    {
+                        "field": "entered_references",
+                        "code": "UNKNOWN_REFERENCE",
+                        "message": f"reference {reference} not found in controlled registry",
+                        "reference": reference,
+                    }
+                )
+                continue
+            if document.get("revision_status") == "SUPERSEDED":
+                chain = self.corpus.get_revision_chain(document["document_id"])
+                current = next(
+                    (item for item in chain if item.get("revision_status") == "CURRENT"),
+                    None,
+                )
+                issues.append(
+                    {
+                        "field": "entered_references",
+                        "code": "SUPERSEDED_REFERENCE",
+                        "message": f"reference {reference} is superseded",
+                        "reference": reference,
+                        "current_reference": current.get("reference_number") if current else None,
+                    }
+                )
         result["validation_issues"] = issues
         self._log(
             "input_validator",
             "gate",
             "FAIL" if issues else "PASS",
-            {"gate": "required_field", "missing_fields": [x["field"] for x in issues]},
+            {
+                "gate": "required_field_and_reference",
+                "issues": [
+                    {"field": x["field"], "code": x["code"]} for x in issues
+                ],
+            },
         )
         if issues:
-            return self._terminal(result, FinalState.NEEDS_CLARIFICATION, "critical input missing")
+            return self._terminal(
+                result,
+                FinalState.NEEDS_CLARIFICATION,
+                "critical input or entered reference requires clarification",
+            )
         return self._finish(result, "input_validator", route="plan", reason="required fields pass")
 
     def _fallback_plan(self, case: dict[str, Any]) -> dict[str, Any]:
@@ -307,6 +385,18 @@ class WorkflowRunner:
             ),
             SearchTask(
                 source_type="TSM", objective="locate symptom evidence", query=query, filters=filters
+            ),
+            SearchTask(
+                source_type="CDL",
+                objective="check configuration deviation references when relevant",
+                query=query,
+                filters=filters,
+            ),
+            SearchTask(
+                source_type="ENGINEERING_PROCEDURE",
+                objective="check controlled engineering procedure context when relevant",
+                query=query,
+                filters=filters,
             ),
         ]
         return {
@@ -339,8 +429,17 @@ class WorkflowRunner:
                 ),
                 payload={
                     "case": case,
-                    "allowed_sources": ["AMM", "MEL", "TSM"],
+                    "allowed_sources": [
+                        "AMM",
+                        "MEL",
+                        "CDL",
+                        "TSM",
+                        "ENGINEERING_PROCEDURE",
+                        "HISTORICAL_RECORD",
+                    ],
                     "max_retrieval_loops": result["limits"]["max_retrieval_loops"],
+                    "source_snapshot_id": result["source_snapshot_id"],
+                    "workflow_version": result["workflow_version"],
                 },
                 fallback=fallback,
             )
@@ -385,6 +484,7 @@ class WorkflowRunner:
             "ata_chapter": case.get("ata_chapter"),
         }
         query = case.get("defect_description", "")
+        top_k = min(self.settings.retrieval_top_k, self.settings.max_candidates_per_path)
         candidates: list[dict[str, Any]] = []
         try:
             self._log("query_expansion_agent", "agent", "START", {"loop": counters.retrieval_loops})
@@ -392,7 +492,7 @@ class WorkflowRunner:
                 result,
                 "query_expansion_agent",
                 "search_semantic",
-                lambda: self.corpus.search_semantic(query, filters=filters, top_k=6),
+                lambda: self.corpus.search_semantic(query, filters=filters, top_k=top_k),
             )
             candidates.extend(found)
             self._log("query_expansion_agent", "agent", "END", {"output_count": len(found)})
@@ -424,7 +524,7 @@ class WorkflowRunner:
                 result,
                 "keyword_metadata_agent",
                 "search_lexical",
-                lambda: self.corpus.search_lexical(query, filters=filters, top_k=6),
+                lambda: self.corpus.search_lexical(query, filters=filters, top_k=top_k),
             )
             candidates.extend(lexical)
             self._log("keyword_metadata_agent", "agent", "END", {"output_count": len(lexical)})
@@ -455,7 +555,7 @@ class WorkflowRunner:
                 result,
                 "historical_context_agent",
                 "search_historical_cases",
-                lambda: self.corpus.search_historical_cases(case, top_k=2),
+                lambda: self.corpus.search_historical_cases(case, top_k=top_k),
             )
             candidates.extend(history)
             self._log("historical_context_agent", "agent", "END", {"output_count": len(history)})
@@ -861,6 +961,8 @@ class WorkflowRunner:
                     "Do not add maintenance advice or override deterministic gates."
                 ),
                 payload={
+                    "case_id": result["case_id"],
+                    "source_snapshot_id": result["source_snapshot_id"],
                     "claims": package.get("claims", []),
                     "evidence_ids": sorted(evidence_ids),
                     "cross_references": package.get("cross_references", []),
@@ -1018,7 +1120,7 @@ class WorkflowRunner:
         run_id = f"run-{uuid.uuid4().hex[:12]}"
         case_id = str(raw_input.get("case_id") or f"case-{uuid.uuid4().hex[:8]}")
         correlation_id = f"corr-{uuid.uuid4().hex[:12]}"
-        trace_id = f"local-{uuid.uuid4().hex[:16]}"
+        trace_id = uuid.uuid4().hex
         self.logger = get_logger(
             log_dir=Path(self.settings.log_dir),
             run_id=run_id,
@@ -1027,6 +1129,13 @@ class WorkflowRunner:
             trace_id=trace_id,
         )
         self.model = JSONModelClient(self.settings, self.logger)
+        self.telemetry = LangfuseTelemetry(self.settings, self.logger)
+        self.deep_agent = DeepAgentHarness(
+            settings=self.settings,
+            corpus=self.corpus,
+            logger=self.logger,
+            telemetry=self.telemetry,
+        )
         limits = ExecutionLimits(
             max_graph_steps=min(self.settings.max_graph_steps, self.settings.max_turns, 40),
             max_retrieval_loops=self.settings.max_retrieval_loops,
@@ -1040,7 +1149,10 @@ class WorkflowRunner:
             "run_id": run_id,
             "case_id": case_id,
             "workflow_version": self.settings.workflow_version,
-            "prompt_versions": self.settings.prompt_versions,
+            "prompt_versions": {
+                **self.settings.prompt_versions,
+                "profile": self.settings.prompt_profile,
+            },
             "source_snapshot_id": self.corpus.source_snapshot_id,
             "ingestion_snapshot": ingestion_snapshot.model_dump(mode="json"),
             "raw_input": copy.deepcopy(raw_input),
@@ -1079,15 +1191,70 @@ class WorkflowRunner:
             {
                 "workflow_version": self.settings.workflow_version,
                 "model": self.settings.openai_model,
+                "prompt_profile": self.settings.prompt_profile,
                 "base_url": self.settings.openai_base_url,
                 "source_snapshot_id": self.corpus.source_snapshot_id,
                 "snapshot_digest": ingestion_snapshot.snapshot_digest,
                 "ingested_document_count": len(ingestion_snapshot.documents),
                 "synthetic": True,
+                "deep_agent_enabled": self.settings.enable_deep_agent,
+                "langfuse_enabled": self.telemetry.enabled if self.telemetry else False,
                 "limits": limits.model_dump(),
             },
         )
-        return self.build_graph().invoke(
-            initial,
-            config={"recursion_limit": min(self.settings.max_turns, 40)},
-        )
+        graph = self.build_graph()
+        client = self.telemetry.client() if self.telemetry else None
+        if client is not None:
+            try:
+                from langfuse import propagate_attributes
+
+                with client.start_as_current_observation(
+                    as_type="span",
+                    name="defect_analysis",
+                    trace_context={"trace_id": trace_id},
+                ) as span:
+                    with propagate_attributes(
+                        session_id=case_id,
+                        user_id=str(raw_input.get("created_by") or "demo-user"),
+                        tags=["aabw", "aircraft-maintenance", "defect-analysis"],
+                    ):
+                        span.update(
+                            input={
+                                "case_id": case_id,
+                                "synthetic": raw_input.get("synthetic", True),
+                            },
+                            metadata={
+                                "workflow_version": self.settings.workflow_version,
+                                "prompt_profile": self.settings.prompt_profile,
+                                "source_snapshot_id": self.corpus.source_snapshot_id,
+                            },
+                        )
+                        result = graph.invoke(
+                            initial,
+                            config={"recursion_limit": min(self.settings.max_turns, 40)},
+                        )
+                        span.update(
+                            output={
+                                "final_state": result.get("final_state"),
+                                "run_id": result.get("run_id"),
+                            }
+                        )
+            except Exception as exc:  # pragma: no cover - Langfuse failures are external
+                self._log(
+                    "langfuse",
+                    "trace",
+                    "ERROR",
+                    {"error_type": type(exc).__name__, "fallback": "local_trace"},
+                )
+                result = graph.invoke(
+                    initial,
+                    config={"recursion_limit": min(self.settings.max_turns, 40)},
+                )
+        else:
+            result = graph.invoke(
+                initial,
+                config={"recursion_limit": min(self.settings.max_turns, 40)},
+            )
+        if self.telemetry:
+            self.telemetry.flush()
+        return result

@@ -44,6 +44,12 @@ def test_execution_limit_defaults_stay_bounded() -> None:
     assert limits.max_tool_calls == 30
 
 
+def test_retrieval_top_k_default_matches_architecture() -> None:
+    settings = Settings()
+
+    assert settings.retrieval_top_k == 13
+
+
 def test_ingestion_to_workflow_contract_round_trip() -> None:
     payload = {
         "case_id": "CASE-INGEST-001",

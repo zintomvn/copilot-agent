@@ -68,3 +68,20 @@ def test_review_ready_claims_never_use_rejected_evidence(tmp_path: Path) -> None
     rejected = {item["evidence_id"] for item in result["rejected_evidence"]}
     cited = {evidence_id for claim in result["claims"] for evidence_id in claim["evidence_ids"]}
     assert not cited & rejected
+
+
+def test_historical_retrieval_uses_configured_top_k(tmp_path: Path) -> None:
+    fixture = load_jsonl(DATASET)[0]
+    settings = _settings(tmp_path)
+    runner = WorkflowRunner(settings=settings)
+    observed: dict[str, int] = {}
+    original = runner.corpus.search_historical_cases
+
+    def capture_top_k(case_features: object, top_k: int = 0) -> list[dict[str, object]]:
+        observed["top_k"] = top_k
+        return original(case_features, top_k=top_k)
+
+    runner.corpus.search_historical_cases = capture_top_k  # type: ignore[method-assign]
+    runner.run(fixture["input_case"])
+
+    assert observed["top_k"] == settings.retrieval_top_k
